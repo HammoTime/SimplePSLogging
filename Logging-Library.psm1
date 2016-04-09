@@ -21,20 +21,30 @@
         [String]
         $BackgroundColor = $null,
         [Switch]
-        $NoDate
+        $NoDate,
+        [Switch]
+        $NoMessageType
     )
 
-    $OutputLine = ''
+    $OutputLine = $null
     $WindowOutput = ''
     $CurrentTime = (Get-Date).ToString('dd/MM/yyyy hh:mm:ss')
 
-    if($NoDate)
+    if($NoDate -and !$NoMessageType)
     {
-        $OutputLine += "[$MessageType]: $Message"
+        $OutputLine = "[$MessageType]: $Message"
+    }
+    elseif(!$NoDate -and $NoMessageType)
+    {
+        $OutputLine = "[$CurrentTime]: $Message"
+    }
+    elseif($NoDate -and $NoMessageType)
+    {
+        $OutputLine = $Message
     }
     else
     {
-        $OutputLine += "[$CurrentTime] [$MessageType]: $Message"
+        $OutputLine = "[$CurrentTime] [$MessageType]: $Message"
     }
 
     if($PsISE -eq $null)
