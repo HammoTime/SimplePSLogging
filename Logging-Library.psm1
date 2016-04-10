@@ -28,6 +28,7 @@
 
     $OutputLine = $null
     $WindowOutput = ''
+    $WindowWidth = $null
     $CurrentTime = (Get-Date).ToString('dd/MM/yyyy hh:mm:ss')
 
     if($NoDate -and !$NoMessageType)
@@ -83,15 +84,27 @@
 
     if($Global:FileLoggingEnabled)
     {
-        Add-Content -Path $Global:LogFileLocation -Value ($OutputLine)
+        Try
+        {
+            Add-Content -Path $Global:LogFileLocation -Value ($OutputLine)
+        }
+        Catch
+        {
+            Write-Host -ForegroundColor Red ($_.Exception | Format-List -Force)
+            Disable-LogWriting
+        }
     }
 }
 
 Function Write-BlankLine
 {
+    param(
+        [Switch]
+        $IgnoreLogging # Added as people may not want to include blank lines in their files on some occassions.
+    )
     Write-Host ('')
 
-    if($Global:FileLoggingEnabled)
+    if($Global:FileLoggingEnabled -and !$IgnoreLogging)
     {
         Add-Content -Path $Global:LogFileLocation -Value ''
     }
@@ -128,95 +141,59 @@ Function Enable-LogWriting
     param
     (
         [Parameter(Mandatory=$True)]
-        $OutputLocation,
-        [ValidateSet('FILE', 'SQL')]
-        [String]
-        $LogType = 'FILE',
-        [Int]
-        $BufferSize = 0
+        $OutputLocation
     )
 
-    if($LogType -eq 'FILE')
+    $OutputFolder = Split-Path -Parent $OutputLocation
+    $FolderExists = $False
+    $CanWrite = $False
+
+    if(Test-Path $OutputFolder)
     {
-        $OutputFolder = Split-Path -Parent $OutputLocation
-        $FolderExists = $False
-        $CanWrite = $False
+        $FolderExists = $True
 
-        if(Test-Path $OutputFolder)
+        Try
         {
-            $FolderExists = $True
-
-            Try
-            {
-                # System will throw an exception due to security policy
-                # if we can't open write on the file.
-                # This is also good, because it acts as a 'touch' if
-                # the file doesn't exist, so we know we've been successful.
-                [System.IO.File]::OpenWrite($OutputLocation).Close()
-                $CanWrite = $True
-            }
-            Catch { }
+            # System will throw an exception due to security policy
+            # if we can't open write on the file.
+            # This is also good, because it acts as a 'touch' if
+            # the file doesn't exist, so we know we've been successful.
+            [System.IO.File]::OpenWrite($OutputLocation).Close()
+            $CanWrite = $True
         }
+        Catch { }
+    }
 
+    if($FolderExists -and $CanWrite) 
+    {
+        $Global:FileLoggingEnabled = $True
+        $Global:LogFileLocation = $OutputLocation
 
-
-        if($FolderExists -and $CanWrite) 
+        Write-Message 'Logging is now enabled.'
+        Write-Message "Log output will be available at '$OutputLocation'."
+    }
+    else
+    {
+        Write-Message 'Logging could not be activated!' ERRR -ForegroundColor Red -BackgroundColor Black
+       
+        if(!$FolderExists)
         {
-            $Global:FileLoggingEnabled = $True
-            $Global:LogFileLocation = $OutputLocation
-
-            if($BufferSize -gt 0)
-            {
-                Write-Message 'Buffering has not been implemented for file logging. Parameter ignored.' WARN -ForegroundColor Yellow
-            }
-
-            Write-Message 'Logging is now enabled.'
-            Write-Message "Log output will be available at '$OutputLocation'."
+            Write-Message "'$OutputFolder' doesn't exist." ERRR -ForegroundColor Red -BackgroundColor Black
         }
         else
         {
-            Write-Message 'Logging could not be activated!' ERRR -ForegroundColor Red -BackgroundColor Black
-        
-            if(!$FolderExists)
+            if(!$CanWrite)
             {
-                Write-Message "'$OutputFolder' doesn't exist." ERRR -ForegroundColor Red -BackgroundColor Black
-            }
-            else
-            {
-                if(!$CanWrite)
-                {
-                    Write-Message "Sorry, you don't have permission to write to '$OutputLocation'." ERRR -ForegroundColor Red -BackgroundColor Black
-                }
+                Write-Message "Sorry, you don't have permission to write to '$OutputLocation'." ERRR -ForegroundColor Red -BackgroundColor Black
             }
         }
-    }
-    elseif($LogType -eq 'SQL')
-    {
-        Write-Message 'Sorry, this feature hasn''t been implemented yet. Skipping.' ERRR -ForegroundColor Yellow
     }
 }
 
 Function Disable-LogWriting
 {
-    param
-    (
-        [ValidateSet('ALL', 'FILE', 'SQL')]
-        [String]
-        $LogType = 'ALL'
-    )
-
     $LoggingHasBeenDisabled = $False
-
-    if($Global:SqlLoggingEnabled)
-    {
-        Write-Message 'Sql logging now disabled on this system.'
-        $Global:SqlLoggingEnabled = $False
-        $Global:SqlLogConnectionString = $null
-        $Global:SqlLogBuffer = $null
-        $LoggingHasBeenDisabled = $True
-    }
     
-    # We always want to disable file logging last, because it is usually the only guaranteed log to work.
     if($Global:FileLoggingEnabled)
     {
         Write-Message 'File logging now disabled on this system.'
@@ -225,7 +202,7 @@ Function Disable-LogWriting
         $LoggingHasBeenDisabled = $True
     }
 
-    if($LoggingHasBeenDisabled)
+    if(!$LoggingHasBeenDisabled)
     {
         Write-Message -ForegroundColor Red 'Logging wasn''t enabled, no action has occured.' ERRR
     }
