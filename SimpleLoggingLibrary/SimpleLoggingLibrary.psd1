@@ -1,5 +1,5 @@
 #
-# Module manifest for module 'SimpleLoggingLibrary'
+# Module manifest for module 'SimplePSLogging'
 #
 
 @{
@@ -23,10 +23,10 @@ Copyright = '(c) Adam Hammond. All rights reserved.'
 PowerShellVersion = '2.0'
 
 # List of all modules packaged with this module
-ModuleList = @('.\SimpleLoggingLibrary.psm1')
+ModuleList = @('.\SimplePSLogging.psm1')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('.\SimpleLoggingLibrary.psm1')
+NestedModules = @('.\SimplePSLogging.psm1')
 
 # Functions to export from this module
 FunctionsToExport = @('Write-Message', 'Write-ScriptHeader', 'Enable-LogWriting', 'Disable-LogWriting')
