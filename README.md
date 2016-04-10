@@ -1,12 +1,18 @@
 # SimplePSLogging
 A simple PowerShell logging library.
 
-This library is provides a few key functions to have nice console output in the format of:
-  [DATE] [MSGTYPE]: MESSAGE.
+## Install
+```
+# Must be run as an administrator.
+Invoke-WebRequest 'https://github.com/HammoTime/SimplePSLogging/blob/master/Logging-Library.psm1' -OutFile ($PSHome + '\Modules\Logging-Library.psm1')
+```
 
-  Example:
-  [01/01/2016] [INFO]: This is my message.
+## Usage
 
-This is just a format that I'm a fan of. The library also allows you to enable logging of the output to text file simultaneously.
+```Powershell
 
-Please let me know if you find any bugs.
+Enable-FileLogging 'C:\Temp\Log.txt'
+Write-Message 'This is an error message!' ERRR
+Disable-FileLogging
+
+```
