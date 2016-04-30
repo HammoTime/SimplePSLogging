@@ -54,6 +54,10 @@ Function Write-Message
         .PARAMETER NoMessageType
          
         Do not include the MessageType in the output.
+        
+        .PARAMETER NoNewLine
+        
+        Do not include a new line after writing the message.
          
         .EXAMPLE
          
@@ -117,7 +121,9 @@ Function Write-Message
         [Switch]
         $NoDate,
         [Switch]
-        $NoMessageType
+        $NoMessageType,
+        [Switch]
+        $NoNewLine
     )
 
     $OutputLine = $null
@@ -158,29 +164,36 @@ Function Write-Message
     {
         $WindowOutput = $OutputLine
     }
+    
+    if(!$NoNewLine)
+    {
+        $WindowOutput += "`r`n"
+        $OutputLine += "`r`n"
+    }
 
     if([String]::IsNullOrEmpty($ForegroundColor) -and [String]::IsNullOrEmpty($BackgroundColor))
     {
-        Write-Host $WindowOutput
+        Write-Host $WindowOutput -NoNewLine
     }
     elseif(![String]::IsNullOrEmpty($ForegroundColor) -and ![String]::IsNullOrEmpty($BackgroundColor))
     {
-        Write-Host -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor $WindowOutput
+        Write-Host -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor $WindowOutput -NoNewLine
     }
     elseif(![String]::IsNullOrEmpty($ForegroundColor) -and [String]::IsNullOrEmpty($BackgroundColor))
     {
-        Write-Host -ForegroundColor $ForegroundColor $WindowOutput
+        Write-Host -ForegroundColor $ForegroundColor $WindowOutput -NoNewLine
     }
     elseif([String]::IsNullOrEmpty($ForegroundColor) -and ![String]::IsNullOrEmpty($BackgroundColor))
     {
-        Write-Host -BackgroundColor $BackgroundColor $WindowOutput
+        Write-Host -BackgroundColor $BackgroundColor $WindowOutput -NoNewLine
     }
 
     if($Global:FileLoggingEnabled)
     {
         Try
         {
-            Add-Content -Path $Global:LogFileLocation -Value ($OutputLine)
+            # Changed to AppendAllText to support -NoNewLine correctly.
+            [System.IO.File]::AppendAllText($Global:LogFileLocation, $OutputLine, [System.Text.Encoding]::Unicode)
         }
         Catch
         {
@@ -254,7 +267,7 @@ Function Write-ScriptHeader
         Write-ScriptHeader 'Test Script' '98.1.3' 'Veridian Dynamics'
          
         Output:
-        Test Script [98.1.3]
+        Test Script [Version 98.1.3]
         (c) 2016 Veridian Dynamics. All rights reserved.
         
          
@@ -281,7 +294,7 @@ Function Write-ScriptHeader
     {
         Clear-Host
     }
-    Write-Message -NoDate -NoMessageType ("$ScriptName [$Version]")
+    Write-Message -NoDate -NoMessageType ("$ScriptName [Version $Version]")
     Write-Message -NoDate -NoMessageType ("(c) $((Get-Date).ToString('yyyy')) $CompanyName. All rights reserved.")
     Write-BlankLine
 }
@@ -411,3 +424,4 @@ Export-ModuleMember -Function Write-Message
 Export-ModuleMember -Function Write-ScriptHeader
 Export-ModuleMember -Function Enable-LogWriting
 Export-ModuleMember -Function Disable-LogWriting
+Export-ModuleMember -Function Write-BlankLine
