@@ -26,7 +26,7 @@ PowerShellVersion = '4.0'
 ModuleList = @('SimplePSLogging')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('.\SimplePSLogging.psm1', '.\SimplePSFileLogging.psm1', '.\SimplePSSqlLogging.psm1', '.\SimplePSLoggingUtilities.psm1')
+NestedModules = @('.\SimplePSLogging.psm1', '.\LoggingModules\SimplePSFileLogging.psm1', '.\LoggingModules\SimplePSSqlLogging.psm1', '.\SimplePSLoggingUtilities.psm1')
 
 # Functions to export from this module
 FunctionsToExport = @('Write-Message', 'Write-ScriptHeader', 'Enable-LogWriting', 'Disable-LogWriting', 'Write-BlankLine', 'Update-SimplePSLogging')
