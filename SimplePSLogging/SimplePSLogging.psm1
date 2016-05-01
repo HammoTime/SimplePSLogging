@@ -1,5 +1,5 @@
 ﻿<#
-    Version:        1.0.4.0
+    Version:        1.1.0.0
     Author:         Adam Hammond
     Creation Date:  09/04/2016
     Last Change:    Added Update-SimplePSLogging
@@ -7,7 +7,6 @@
                     information out to the user at the console. It writes out a MessageType
                     and the current date out to the user, along with a message.
                     
-                    If enabled, the output will also be written to a file.
     Link:           https://github.com/HammoTime/SimplePSLogging
     License:        The MIT License (MIT)
 #>
@@ -313,9 +312,9 @@ Function Enable-LogWriting
         
         .PARAMETER OutputLocation
         
-        The file you want to write the output to.
-        * Folder must exist.
-        * File does not have to exist.
+        This can be multiple things:
+         - FILE: Expects a directory.
+         - SQL:  Expects a SQL Connection String.
          
         .EXAMPLE
          
@@ -332,52 +331,19 @@ Function Enable-LogWriting
     param
     (
         [Parameter(Mandatory=$True)]
-        $OutputLocation
+        $OutputLocation,
+        [Parameter(Mandatory=$True)]
+        [ValidateSet('File', 'Sql')]
+        $LoggingType = 'File'
     )
 
-    $OutputFolder = Split-Path -Parent $OutputLocation
-    $FolderExists = $False
-    $CanWrite = $False
-
-    if(Test-Path $OutputFolder)
+    if($LoggingType -eq 'File')
     {
-        $FolderExists = $True
-
-        Try
-        {
-            # System will throw an exception due to security policy
-            # if we can't open write on the file.
-            # This is also good, because it acts as a 'touch' if
-            # the file doesn't exist, so we know we've been successful.
-            [System.IO.File]::OpenWrite($OutputLocation).Close()
-            $CanWrite = $True
-        }
-        Catch { }
+        Enable-FileLogWriting $OutputLocation
     }
-
-    if($FolderExists -and $CanWrite) 
+    elseif($LoggingType -eq 'Sql')
     {
-        $Global:FileLoggingEnabled = $True
-        $Global:LogFileLocation = $OutputLocation
-
-        Write-Message 'Logging is now enabled.'
-        Write-Message "Log output will be available at '$OutputLocation'."
-    }
-    else
-    {
-        Write-Message 'Logging could not be activated!' ERRR -ForegroundColor Red -BackgroundColor Black
-       
-        if(!$FolderExists)
-        {
-            Write-Message "'$OutputFolder' doesn't exist." ERRR -ForegroundColor Red -BackgroundColor Black
-        }
-        else
-        {
-            if(!$CanWrite)
-            {
-                Write-Message "Sorry, you don't have permission to write to '$OutputLocation'." ERRR -ForegroundColor Red -BackgroundColor Black
-            }
-        }
+        Enable-SqlLogWriting $OutputLocation
     }
 }
 
@@ -404,160 +370,24 @@ Function Disable-LogWriting
          
         https://github.com/HammoTime/SimplePSLogging/
     #>
-    $LoggingHasBeenDisabled = $False
-    
-    if($Global:FileLoggingEnabled)
-    {
-        Write-Message 'File logging now disabled on this system.'
-        $Global:FileLoggingEnabled = $False
-        $Global:LogFileLocation = $null
-        $LoggingHasBeenDisabled = $True
-    }
-
-    if(!$LoggingHasBeenDisabled)
-    {
-        Write-Message -ForegroundColor Red 'Logging wasn''t enabled, no action has occured.' ERRR
-    }
-}
-
-Function Update-SimplePSLogging
-{
-    <#
-        .SYNOPSIS
-        
-        Updates the PS Logging Module from GitHub.
-        
-        .DESCRIPTION
-        
-        Checks the current releases on GitHub. If there is a new release, downloads the source
-        files, copies them to the modules directory, and reloads the current runspace with
-        the new module.
-        
-        .PARAMETER PreRelease
-        
-        If the latest release is a pre-release version and this switch is included, then
-        it will install the pre-release version instead of the most recent production release.
-         
-        .LINK
-         
-        https://github.com/HammoTime/SimplePSLogging/
-    #>
-    
-    Param(
-        [Switch]
-        $PreRelease
+    param
+    (
+        [Parameter(Mandatory=$True)]
+        [ValidateSet('File', 'Sql')]
+        $LoggingType = 'File'
     )
-    Clear-Host
-    Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + '] [INFO]: Updating SimplePSLogging.')
-
-    $ModuleDirectory = $PSHome + '\Modules\SimplePSLogging\'
-    $TempDirectory = $Env:TEMP + '\SimplePSLogging\'
-    $ModuleZipLocation = $TempDirectory + 'SimplePSLogging.zip'
-    $ReleasesURL = 'https://git.io/vwMSG'
-
-    Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: Retrieving release information from '$ReleasesURL'.")
-    Try
+    
+    if($LoggingType -eq 'File')
     {
-        $ReleasesPage = Invoke-WebRequest $ReleasesURL
+        Disable-FileLogWriting
     }
-    Catch
+    elseif($LoggingType -eq 'Sql')
     {
-        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [ERRR]: Couldn't retrieve release information (Invalid Request).") -ForegroundColor Red
-    }
-
-    if($ReleasesPage.StatusCode -eq 200)
-    {
-        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + '] [INFO]: Release information retrieved successfully.')
-        $Releases = ConvertFrom-Json $ReleasesPage.Content
-        if($PreRelease)
-        {
-            $LatestRelease = $Releases | Sort-Object -Property Published_At -Descending | Select-Object -First 1
-        }
-        else
-        {
-            $LatestRelease = $Releases | Sort-Object -Property Published_At -Descending | Where-Object { ([Boolean]$_.Prerelease) -eq $False } | Select-Object -First 1
-        }
-        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: Current release version at $($LatestRelease.Tag_Name).")
-        $InstalledVersion = (Get-Module -ListAvailable | Where-Object { $_.Name -eq 'SimplePSLogging' }).Version
-        $InstalledVersionNumber = 'v' + $InstalledVersion.Major + '.' + $InstalledVersion.Minor + '.' + $InstalledVersion.Build
-        
-        if($InstalledVersionNumber -eq $LatestRelease.Tag_Name)
-        {
-            Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: Installed version at $($InstalledVersionNumber) (current).") -ForegroundColor Green
-            Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: No update required.") -ForegroundColor Green
-        }
-        else
-        {
-            Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [WARN]: Installed version at $($InstalledVersionNumber) (out-of-date).") -ForegroundColor Yellow
-            Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [WARN]: Update required.") -ForegroundColor Yellow
-            Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: Creating temporary directory at '$TempDirectory'.")
-            New-Item $TempDirectory -ItemType Directory -Force | Out-Null
-        
-            Try
-            {
-                Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + '] [INFO]: Downloading release zip file.')
-                Invoke-WebRequest $LatestRelease.ZipBall_Url -OutFile $ModuleZipLocation
-                Add-Type -AssemblyName System.IO.Compression.FileSystem
-                Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + '] [INFO]: Unpacking zip file.')
-                [System.IO.Compression.ZipFile]::ExtractToDirectory($ModuleZipLocation, $TempDirectory)
-                $ExtractedFiles = Get-ChildItem ($TempDirectory + (Get-ChildItem $TempDirectory -Directory | Select-Object -First 1).Name + '\SimplePSLogging\')
-
-                Try
-                {
-                    Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: Deleting existing module files at '$ModuleDirectory'.")
-                    Remove-Item $ModuleDirectory -Force -Recurse
-                    Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: Creating module directory at '$ModuleDirectory'.")
-                    New-Item $ModuleDirectory -ItemType Directory -Force | Out-Null
-
-                    ForEach($ExtractedFile in $ExtractedFiles)
-                    {
-                        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: Copying '$($ExtractedFile.Name)' to module directory.")
-                        Copy-Item -Path $ExtractedFile.FullName -Destination ($ModuleDirectory + $ExtractedFile.Name) -Force
-                    }
-
-                    Try
-                    {
-                        Remove-Module 'SimplePSLogging' -ErrorAction Stop -Force
-                        Import-Module 'SimplePSLogging' -ErrorAction Stop -Force
-                        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: 'SimplePSLogging' successfully reimported into current session.") -ForegroundColor Green
-                        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [INFO]: 'SimplePSLogging' updated successfully.") -ForegroundColor Green
-                    }
-                    Catch
-                    {
-                        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [ERRR]: Error reloading module into current session.") -ForegroundColor Red
-                        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [ERRR]: Please reload PowerShell to use new module.") -ForegroundColor Red
-                    }
-                }
-                Catch
-                {
-                    Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [ERRR]: Error copying new module files to module directory.") -ForegroundColor Red
-                }
-
-                Try
-                {
-                    Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + '] [INFO]: Deleting temporary files.')
-                    Remove-Item $TempDirectory -Force -Recurse
-                }
-                Catch
-                {
-                    Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [ERRR]: Error deleting temporary directory.") -ForegroundColor Red
-                }
-            }
-            Catch
-            {
-                Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [ERRR]: Error processing zip file.") -ForegroundColor Red
-            }
-        }
-    }
-    else
-    {
-        Write-Host ('[' + (Get-Date).ToString('dd/MM/yyyy hh:mm:ss') + "] [ERRR]: Couldn't retrieve release information (HTTP Status Code: $($ReleasesPage.StatusCode)).") -ForegroundColor Red
+        Disable-SqlLogWriting
     }
 }
-
 Export-ModuleMember -Function Write-Message
 Export-ModuleMember -Function Write-ScriptHeader
 Export-ModuleMember -Function Enable-LogWriting
 Export-ModuleMember -Function Disable-LogWriting
 Export-ModuleMember -Function Write-BlankLine
-Export-ModuleMember -Function Update-SimplePSLogging

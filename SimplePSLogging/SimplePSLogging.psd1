@@ -5,7 +5,7 @@
 @{
 
 # Version number of this module.
-ModuleVersion = '1.0.4.0'
+ModuleVersion = '1.1.0.0'
 
 # ID used to uniquely identify this module
 GUID = '34a074ea-124e-4a96-86ca-168a6d1610fa'
@@ -23,10 +23,10 @@ Copyright = '(c) Adam Hammond. All rights reserved.'
 PowerShellVersion = '4.0'
 
 # List of all modules packaged with this module
-ModuleList = @('.\SimplePSLogging.psm1')
+ModuleList = @('SimplePSLogging')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('.\SimplePSLogging.psm1')
+NestedModules = @('.\SimplePSLogging.psm1', '.\SimplePSFileLogging.psm1', '.\SimplePSSqlLogging.psm1', '.\SimplePSLoggingUtilities.psm1')
 
 # Functions to export from this module
 FunctionsToExport = @('Write-Message', 'Write-ScriptHeader', 'Enable-LogWriting', 'Disable-LogWriting', 'Write-BlankLine', 'Update-SimplePSLogging')
