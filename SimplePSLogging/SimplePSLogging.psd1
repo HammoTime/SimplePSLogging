@@ -29,7 +29,7 @@ ModuleList = @('.\SimplePSLogging.psm1')
 NestedModules = @('.\SimplePSLogging.psm1')
 
 # Functions to export from this module
-FunctionsToExport = @('Write-Message', 'Write-ScriptHeader', 'Enable-LogWriting', 'Disable-LogWriting')
+FunctionsToExport = @('Write-Message', 'Write-ScriptHeader', 'Enable-LogWriting', 'Disable-LogWriting', 'Write-BlankLine')
 
 # HelpInfo URI of this module
 HelpInfoURI = 'https://github.com/HammoTime/SimplePSLogging'
