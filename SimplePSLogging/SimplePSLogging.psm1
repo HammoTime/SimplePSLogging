@@ -422,7 +422,7 @@ Function Disable-LogWriting
 
 Function Update-SimplePSLogging
 {
-        <#
+    <#
         .SYNOPSIS
         
         Updates the PS Logging Module from GitHub.
