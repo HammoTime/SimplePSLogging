@@ -5,7 +5,7 @@
 @{
 
 # Version number of this module.
-ModuleVersion = '1.0.3.0'
+ModuleVersion = '1.0.4.0'
 
 # ID used to uniquely identify this module
 GUID = '34a074ea-124e-4a96-86ca-168a6d1610fa'
@@ -20,7 +20,7 @@ CompanyName = 'None'
 Copyright = '(c) Adam Hammond. All rights reserved.'
 
 # Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '2.0'
+PowerShellVersion = '4.0'
 
 # List of all modules packaged with this module
 ModuleList = @('.\SimplePSLogging.psm1')
@@ -29,7 +29,7 @@ ModuleList = @('.\SimplePSLogging.psm1')
 NestedModules = @('.\SimplePSLogging.psm1')
 
 # Functions to export from this module
-FunctionsToExport = @('Write-Message', 'Write-ScriptHeader', 'Enable-LogWriting', 'Disable-LogWriting', 'Write-BlankLine')
+FunctionsToExport = @('Write-Message', 'Write-ScriptHeader', 'Enable-LogWriting', 'Disable-LogWriting', 'Write-BlankLine', 'Update-SimplePSLogging')
 
 # HelpInfo URI of this module
 HelpInfoURI = 'https://github.com/HammoTime/SimplePSLogging'
