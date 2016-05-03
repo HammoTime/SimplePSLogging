@@ -2,7 +2,7 @@
     Version:        1.1.0.0
     Author:         Adam Hammond
     Creation Date:  02/05/2016
-    Last Change:    Created file.
+    Last Change:    Added Write-FileLog
     Description:    Contains functions used to manage log writing to file.
                     
     Link:           https://github.com/HammoTime/SimplePSLogging
@@ -11,7 +11,7 @@
 
 Function Enable-FileLogWriting
 {
-        <#
+    <#
         .SYNOPSIS
         
         Enables logging to file for the SimplePSLogging library.
@@ -93,7 +93,7 @@ Function Enable-FileLogWriting
 
 Function Disable-FileLogWriting
 {
-        <#
+    <#
         .SYNOPSIS
         
         Disables logging to file for the SimplePSLogging library.
@@ -130,5 +130,50 @@ Function Disable-FileLogWriting
     }
 }
 
+Function Write-FileLog
+{
+    <#
+        .SYNOPSIS
+        
+        Writes a message out to a log file.
+        
+        .DESCRIPTION
+        
+        Takes an output string that is passed from Write-Message and writes it out to file. This can be
+        used to write any string to file once Enable-FileLogWriting has been executed (if you want to
+        skip using the Write-Message functionality).
+        
+        .PARAMETER Message
+        
+        The message you wish to write to file.
+         
+        .LINK
+         
+        https://github.com/HammoTime/SimplePSLogging/
+    #>
+    
+    param
+    (
+        [Parameter(Mandatory=$True)]
+        [String]
+        $Message
+    )
+    
+    if($Global:FileLoggingEnabled)
+    {
+        Try
+        {
+            # Changed to AppendAllText to support -NoNewLine correctly.
+            [System.IO.File]::AppendAllText($Global:LogFileLocation, $Message, [System.Text.Encoding]::Unicode)
+        }
+        Catch
+        {
+            Write-Host -ForegroundColor Red ($_.Exception | Format-List -Force)
+            Disable-LogWriting File
+        }
+    }
+}
+
 Export-ModuleMember -Function Enable-FileLogWriting
 Export-ModuleMember -Function Disable-FileLogWriting
+Export-ModuleMember -Function Write-FileLog

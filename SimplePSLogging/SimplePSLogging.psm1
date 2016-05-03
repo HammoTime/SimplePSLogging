@@ -187,19 +187,7 @@ Function Write-Message
         Write-Host -BackgroundColor $BackgroundColor $WindowOutput -NoNewLine
     }
 
-    if($Global:FileLoggingEnabled)
-    {
-        Try
-        {
-            # Changed to AppendAllText to support -NoNewLine correctly.
-            [System.IO.File]::AppendAllText($Global:LogFileLocation, $OutputLine, [System.Text.Encoding]::Unicode)
-        }
-        Catch
-        {
-            Write-Host -ForegroundColor Red ($_.Exception | Format-List -Force)
-            Disable-LogWriting
-        }
-    }
+    Write-FileLog $OutputLine
 }
 
 Function Write-BlankLine
@@ -332,7 +320,6 @@ Function Enable-LogWriting
     (
         [Parameter(Mandatory=$True)]
         $OutputLocation,
-        [Parameter(Mandatory=$True)]
         [ValidateSet('File', 'Sql')]
         $LoggingType = 'File'
     )
@@ -372,7 +359,6 @@ Function Disable-LogWriting
     #>
     param
     (
-        [Parameter(Mandatory=$True)]
         [ValidateSet('File', 'Sql')]
         $LoggingType = 'File'
     )
